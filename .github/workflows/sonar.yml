@@ -1,4 +1,4 @@
-name: Build & Analyze Python with SonarCloud
+name: Analyze Python with SonarCloud (Local CLI)
 
 on:
   push:
@@ -12,40 +12,54 @@ jobs:
   build-and-analyze:
     runs-on: ubuntu-latest
     steps:
+      # 1. Descargar el código del repositorio
       - name: Check out
         uses: actions/checkout@v3
 
+      # 2. Configurar Python (ej. 3.10)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      # 3. Instalar dependencias (p.ej., coverage)
+      - name: Install Python deps
+        run: |
+          pip install -r requirements.txt
 
+      # 4. Correr pruebas unitarias y generar 'coverage.xml'
       - name: Run coverage
         run: |
           coverage run -m unittest discover
           coverage xml
 
+      # 5. Instalar Java 17 con actions/setup-java
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
+      # 6. (Opcional) Verificar la versión de Java
       - name: Check Java version
         run: java -version
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v1.8
-        with:
-          useGlobalJava: true     # <--- Nivel: al mismo nivel que "args"
-          args: >
-            -Dsonar.projectKey=juan-construsoft_python-practicas
-            -Dsonar.organization=juan-construsoft
-            -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.python.coverage.reportPaths=coverage.xml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # 7. Instalar SonarScanner CLI
+      - name: Install SonarScanner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip
+          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+          unzip sonar-scanner-cli-4.8.0.2856-linux.zip
+          sudo mv sonar-scanner-4.8.0.2856-linux /usr/local/sonar-scanner
+          sudo ln -s /usr/local/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner
+
+      # 8. Ejecutar SonarScanner CLI apuntando a SonarCloud
+      - name: SonarScanner CLI
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey=juan-construsoft_python-practicas \
+            -Dsonar.organization=juan-construsoft \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.python.coverage.reportPaths=coverage.xml \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
