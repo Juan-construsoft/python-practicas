@@ -38,6 +38,8 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - name: Confirm Java version
+        run: java -version
 
       # 6. Analizar con SonarCloud
       - name: SonarCloud Scan
