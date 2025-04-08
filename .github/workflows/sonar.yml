@@ -45,6 +45,7 @@ jobs:
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v1.8
         with:
+          useGlobalJava: true
           args: >
             -Dsonar.projectKey=juan-construsoft_python-practicas
             -Dsonar.organization=juan-construsoft
