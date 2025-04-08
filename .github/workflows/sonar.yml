@@ -58,7 +58,7 @@ jobs:
 
       # 5) Ejecuta SonarScanner con Java 17
       - name: SonarScanner CLI
-        run: 
+        run: |
           sonar-scanner 
             -Dsonar.projectKey=juan-construsoft_python-practicas 
             -Dsonar.organization=juan-construsoft 
