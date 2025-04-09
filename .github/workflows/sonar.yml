@@ -1,4 +1,4 @@
-name: SonarCloud Analysis (Local CLI)
+name: Build & Analyze Python with SonarCloud
 
 on:
   push:
@@ -11,73 +11,43 @@ on:
 jobs:
   build-and-analyze:
     runs-on: ubuntu-latest
-    
     steps:
-      # (A) Descarga el código
+      # 1. Checkout del repo
       - name: Check out
         uses: actions/checkout@v3
 
-      # (B) Configura Python
+      # 2. Instalar Python (ej. 3.10)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # (C) Instala dependencias (ej. coverage)
-      - name: Install Python deps
+      # 3. Instalar dependencias
+      - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # (D) Ejecuta pruebas y genera coverage.xml
+      # 4. Correr las pruebas con coverage
       - name: Run coverage
         run: |
           coverage run -m unittest discover
           coverage xml
 
-      # (E) Instala Java 17 con setup-java
+      # 5. Configurar Java 17 antes del escaneo
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
 
-      # (F) Verifica la versión de Java (antes de forzar)
-      - name: Check Java (before forcing)
-        run: |
-          echo "=== Checking java BEFORE forcing ==="
-          which java
-          java -version
-
-      # (G) Fuerza Java 17 en /usr/bin/java con update-alternatives
-      - name: Force Java 17 as default
-        run: |
-          echo "=== Forcing Java 17 default ==="
-          # 1. Observa la salida del paso anterior: la ruta exacta donde se instaló Java 17
-          #    suele ser /opt/hostedtoolcache/Java_Adoptium_jdk/17.x.x/x64/bin/java
-          # 2. Usa esa ruta en update-alternatives:
-          sudo update-alternatives --install /usr/bin/java java "$(which java)" 2
-          sudo update-alternatives --set java "$(which java)"
-          echo "=== Java after forcing ==="
-          which java
-          java -version
-
-      # (H) Instala SonarScanner CLI
-      - name: Install SonarScanner
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip
-          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-          unzip sonar-scanner-cli-4.8.0.2856-linux.zip
-          sudo mv sonar-scanner-4.8.0.2856-linux /usr/local/sonar-scanner
-          # Importante: -sf para forzar el enlace simbólico
-          sudo ln -sf /usr/local/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner
-
-      # (I) Ejecuta SonarScanner CLI con Java 17
-      - name: SonarScanner CLI
-        run: |
-          echo "=== Running SonarScanner CLI ==="
-          sonar-scanner 
-            -Dsonar.projectKey=juan-construsoft_python-practicas 
-            -Dsonar.organization=juan-construsoft 
-            -Dsonar.host.url=https://sonarcloud.io 
-            -Dsonar.python.coverage.reportPaths=coverage.xml 
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+      # 6. Analizar con SonarCloud
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v1.8
+        with:
+          args: >
+            -Dsonar.projectKey=juan-construsoft_python-practicas
+            -Dsonar.organization=juan-construsoft
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
